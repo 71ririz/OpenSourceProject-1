@@ -1,7 +1,6 @@
 package db;
 
 import java.sql.*;
-import java.time.LocalDateTime;
 import java.util.*;
 import javax.swing.*;
 
@@ -19,7 +18,7 @@ public class Database {
 			String user = "root";
 			String pw = "2017018023";
 			
-			Class.forName("com.mysql.jdbc.Driver");
+			Class.forName("com.mysql.cj.jdbc.Driver");
 			
 			conn = DriverManager.getConnection(url, user, pw);
 			stmt = conn.createStatement();
@@ -46,8 +45,8 @@ public class Database {
 		
 	}
 
-//	user_game, game table data 생성 및 삭제
-	public void gameOrder (String userId, String order) {
+//	Create Room 버튼 클릭 시 작동
+	public void createGame (String userId) {
 		Connection conn;
 		Statement stmt = null;
 		PreparedStatement pstmt = null;
@@ -56,46 +55,28 @@ public class Database {
 			String user = "root";
 			String pw = "2017018023";
 			
-			Class.forName("com.mysql.jdbc.Driver");
+			Class.forName("com.mysql.cj.jdbc.Driver");
 			
 			conn = DriverManager.getConnection(url, user, pw);
 			stmt = conn.createStatement();
 //			RoomNum의 마지막 값을 알려주는 쿼리문
 			ResultSet srs = stmt.executeQuery("select last_value(RoomNum) over() as rn_last from game");
 			srs.next();
-
-//			data 생성
-			if (order == "create") {
-//				RoomNum 마지막 값 + 1
-				Integer rn_num = srs.getInt("rn_last") + 1;
-				String rn = String.valueOf(rn_num);
-				
+			
+//			RoomNum 마지막 값 + 1
+			Integer rn_num = srs.getInt("rn_last") + 1;
+			String rn = String.valueOf(rn_num);
+			
 //				game table에 새로운 data 입력
-				pstmt = conn.prepareStatement("insert into game (RoomNum, HostPlayer) values (?, ?)");
-				pstmt.setString(1, rn);
-				pstmt.setString(2, userId);
-				pstmt.executeUpdate();
+			pstmt = conn.prepareStatement("insert into game (RoomNum, HostPlayer) values (?, ?)");
+			pstmt.setString(1, rn);
+			pstmt.setString(2, userId);
+			pstmt.executeUpdate();
 //				user_game table에 새로운 data 입력
-				pstmt = conn.prepareStatement("insert into user_game (RoomNum, HostId, Totalpop, GameStatus) values (?, ?, 1, 0)");
-				pstmt.setString(1, rn);
-				pstmt.setString(2, userId);
-				pstmt.executeUpdate();
-			}
-//			data 삭제
-			else if (order == "delete") {
-//				RoomNum 마지막 값 + 1
-				Integer rn_num = srs.getInt("rn_last");
-				String rn = String.valueOf(rn_num);
-				
-//				user_game table에 새로운 data 입력
-				pstmt = conn.prepareStatement("delete from user_game where RoomNum = (?)");
-				pstmt.setString(1, rn);
-				pstmt.executeUpdate();
-//				game table에 새로운 data 입력
-				pstmt = conn.prepareStatement("delete from game where RoomNum = (?)");
-				pstmt.setString(1, rn);
-				pstmt.executeUpdate();
-			}
+			pstmt = conn.prepareStatement("insert into user_game (RoomNum, HostId, Totalpop, GameStatus) values (?, ?, 1, 0)");
+			pstmt.setString(1, rn);
+			pstmt.setString(2, userId);
+			pstmt.executeUpdate();
 			
 //			gamelistdata 최신화
 			gameShow();
@@ -107,29 +88,36 @@ public class Database {
 			e.printStackTrace();
 		}
 	}
-	
-//	chat data 저장
-	public void chatting(String userId, String text) {
+
+//	Game 창을 종료 시
+	public void deleteGame (String userId) {
 		Connection conn;
 		Statement stmt = null;
 		PreparedStatement pstmt = null;
-		LocalDateTime now = LocalDateTime.now();
-		
 		try {
 			String url = "jdbc:mysql://localhost:3306/Opensource";
 			String user = "root";
 			String pw = "2017018023";
 			
-			Class.forName("com.mysql.jdbc.Driver");
+			Class.forName("com.mysql.cj.jdbc.Driver");
 			
 			conn = DriverManager.getConnection(url, user, pw);
 			stmt = conn.createStatement();
+//			RoomNum의 마지막 값을 알려주는 쿼리문
+			ResultSet srs = stmt.executeQuery("select last_value(RoomNum) over() as rn_last from game");
+			srs.next();
+			
+//			RoomNum 마지막 값 + 1
+			Integer rn_num = srs.getInt("rn_last");
+			String rn = String.valueOf(rn_num);
 			
 //			user_game table에 새로운 data 입력
-			pstmt = conn.prepareStatement("insert into chat (Id, CreateDate, Text) values (?, ?, ?)");
-			pstmt.setString(1, userId);
-			pstmt.setString(2, now.toString());
-			pstmt.setString(3, text);
+			pstmt = conn.prepareStatement("delete from user_game where RoomNum = (?)");
+			pstmt.setString(1, rn);
+			pstmt.executeUpdate();
+//			game table에 새로운 data 입력
+			pstmt = conn.prepareStatement("delete from game where RoomNum = (?)");
+			pstmt.setString(1, rn);
 			pstmt.executeUpdate();
 
 //			gamelistdata 최신화
@@ -142,4 +130,147 @@ public class Database {
 			e.printStackTrace();
 		}
 	}
+	
+
+//Create Room 버튼 클릭 시 작동
+public void createGame() {
+	Connection conn;
+	Statement stmt = null;
+	try {
+		String url = "jdbc:mysql://localhost/?characterEncoding=UTF-8&serverTimezone=UTC";
+		String user = "root";
+		String pw = "2018004027";
+		
+		Class.forName("com.mysql.cj.jdbc.Driver");
+		
+		conn = DriverManager.getConnection(url, user, pw);
+		stmt = conn.createStatement();
+//		RoomNum의 마지막 값을 알려주는 쿼리문
+		ResultSet srs = stmt.executeQuery("select last_value(RoomNum) over() as rn_last from game");
+
+		srs.next();
+//		RoomNum 마지막 값 + 1
+		Integer rn_last = srs.getInt("rn_last") + 1;
+		
+		System.out.println(rn_last);
+		
+		
+		
+	} catch (ClassNotFoundException e) {
+		System.out.println("JDBC Driver load error");
+	} catch (SQLException e) {
+		System.out.println("SQL error2");
+	}
+}
+
+public void createUser(String _i, String _p) {
+	Connection conn;
+	Statement stmt = null;
+	
+	try {
+		String url = "jdbc:mysql://localhost/sample";
+		String user = "root";
+		String pw = "2018004027";
+		
+
+			Class.forName("com.mysql.cj.jdbc.Driver");
+			conn = DriverManager.getConnection(url, user, pw);
+			stmt = conn.createStatement();
+			System.out.println("MySQL 서버 연동 성공");
+		} catch(Exception e) {
+			System.out.println("MySQL 서버 연동 실패 > " + e.toString());
+			}
+}
+
+
+static public boolean logincheck(String _i, String _p) {
+	boolean flag = false;
+	
+	String id = _i;
+	String pw = _p;
+	Connection conn;
+	Statement stmt = null;
+	Statement stmt2 = null;
+	
+	try {
+		String url = "jdbc:mysql://localhost/sample";
+		String user = "root";
+		String password = "2018004027";
+		
+
+			Class.forName("com.mysql.cj.jdbc.Driver");
+			conn = DriverManager.getConnection(url, user, password);
+			stmt = conn.createStatement();
+			stmt2 = conn.createStatement();
+			
+			System.out.println("MySQL 서버 연동 성공");
+		} catch(Exception e) {
+			System.out.println("MySQL 서버 연동 실패 > " + e.toString());
+			}
+	
+	
+	try {
+		String checkingStr = "SELECT password FROM user WHERE Username='" + id + "'";
+		ResultSet result = stmt.executeQuery(checkingStr);
+		
+		int count = 0;
+		while(result.next()) {
+			if(pw.equals(result.getString("password"))) {
+				String status = "UPDATE user SET LoginStatus='0' WHERE Username= '" + id +"'";
+				
+				flag = true;
+				System.out.println("로그인 성공");
+				stmt2.executeUpdate(status);
+			}
+			
+			else {
+				flag = false;
+				System.out.println("로그인 실패");
+			}
+			count++;
+		}
+	} catch(Exception e) {
+		flag = false;
+		System.out.println("로그인 실패 > " + e.toString());
+	}
+	
+	return flag;
+}
+
+
+static public boolean joinCheck(String _i, String _p) {
+boolean flag = false;
+String id = _i;
+String pw = _p;
+Connection conn;
+Statement stmt = null;
+
+try {
+	String url = "jdbc:mysql://localhost/sample";
+	String user = "root";
+	String password = "2018004027";
+	
+
+		Class.forName("com.mysql.cj.jdbc.Driver");
+		conn = DriverManager.getConnection(url, user, password);
+		stmt = conn.createStatement();
+		
+		System.out.println("MySQL 서버 연동 성공");
+	} catch(Exception e) {
+		System.out.println("MySQL 서버 연동 실패 > " + e.toString());
+		}
+	
+try {
+	String insertStr = "INSERT INTO user VALUES('" + id + "', '" + pw + "', '" + 0 + "')";
+	stmt.executeUpdate(insertStr);
+		
+	flag = true;
+	System.out.println("회원가입 성공");
+} catch(Exception e) {
+	flag = false;
+	System.out.println("회원가입 실패 > " + e.toString());
+}
+	
+return flag;
+}
 }
